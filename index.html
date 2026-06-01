@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>VR Game: La Maldición del Guardián (Edición Definitiva 9 Objetos)</title>
+    <meta name="description" content="Juego interactivo VR con Gaze-Fuse Avanzado, Gemas Místicas y Contenedores Anidados">
+    
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+    <script>
+      // VARIABLES GLOBALES DEL JUEGO
+      window.puntos = 0;
+      window.juegoTerminado = false;
+      window.juegoIniciado = false;
+      window.bucleExplosion = null;
+
+      // 1. COMPONENTE PARA EL BOTÓN DE INICIO 3D
+      AFRAME.registerComponent('boton-inicio-vr', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoIniciado) return;
+            
+            window.juegoIniciado = true;
+            
+            var menu = document.getElementById('menu-bienvenida-3d');
+            menu.setAttribute('position', '0 -100 0');
+            menu.setAttribute('visible', 'false');
+
+            // Mostrar los 9 objetos del juego simultáneamente
+            document.getElementById('item-cofre').setAttribute('visible', 'true');
+            document.getElementById('item-world').setAttribute('visible', 'true');
+            document.getElementById('item-esqueleto').setAttribute('visible', 'true');
+            document.getElementById('item-arbol').setAttribute('visible', 'true');
+            document.getElementById('item-pollito').setAttribute('visible', 'true');
+            document.getElementById('item-dragon').setAttribute('visible', 'true');
+            document.getElementById('item-cono').setAttribute('visible', 'true');
+            document.getElementById('item-diamante').setAttribute('visible', 'true');
+            document.getElementById('item-diamante-rojo').setAttribute('visible', 'true');
+          });
+        }
+      });
+
+      // 2. COMPONENTE PARA EL BOTÓN DE REINICIO 3D 
+      AFRAME.registerComponent('boton-reiniciar-vr', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (!window.juegoTerminado) return;
+
+            if (window.bucleExplosion) clearInterval(window.bucleExplosion);
+
+            window.puntos = 0;
+            window.juegoTerminado = false;
+
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: 0 / 5');
+            document.getElementById('texto-pantalla').setAttribute('value', '');
+            
+            document.getElementById('escenario-360').setAttribute('background', 'color: #FFFFFF');
+
+            var menuFin = document.getElementById('menu-fin-3d');
+            menuFin.setAttribute('position', '0 -100 0');
+            menuFin.setAttribute('visible', 'false');
+
+            // Reset absoluto de las 9 entidades
+            document.getElementById('item-cofre').setAttribute('position', '0 0 -7');
+            document.getElementById('item-cofre').setAttribute('visible', 'true');
+
+            document.getElementById('item-world').setAttribute('position', '6 1 4');
+            document.getElementById('item-world').setAttribute('scale', '0.1 0.1 0.1');
+            document.getElementById('item-world').setAttribute('visible', 'true');
+
+            document.getElementById('item-esqueleto').setAttribute('position', '-6 -1.2 3');
+            document.getElementById('item-esqueleto').setAttribute('rotation', '0 120 0');
+            document.getElementById('item-esqueleto').setAttribute('visible', 'true');
+
+            document.getElementById('item-arbol').setAttribute('position', '-4 -2.5 -5');
+            document.getElementById('item-arbol').setAttribute('visible', 'true');
+
+            document.getElementById('item-pollito').setAttribute('position', '4 -1.5 -5');
+            document.getElementById('item-pollito').setAttribute('visible', 'true');
+
+            document.getElementById('item-dragon').setAttribute('position', '0 3 6');
+            document.getElementById('item-dragon').setAttribute('visible', 'true');
+
+            document.getElementById('item-cono').setAttribute('position', '-2 -2.2 5');
+            document.getElementById('item-cono').setAttribute('visible', 'true');
+
+            // Reset del contenedor del Diamante Azul
+            document.getElementById('item-diamante').setAttribute('position', '3 0.5 5');
+            document.getElementById('item-diamante').setAttribute('visible', 'true');
+
+            document.getElementById('item-diamante-rojo').setAttribute('position', '-3 0.8 -4');
+            document.getElementById('item-diamante-rojo').setAttribute('visible', 'true');
+          });
+        }
+      });
+
+      function activarFinJuego(mensaje, colorTexto) {
+        window.juegoTerminado = true;
+
+        var elementos = ['item-cofre', 'item-world', 'item-esqueleto', 'item-arbol', 'item-pollito', 'item-dragon', 'item-cono', 'item-diamante', 'item-diamante-rojo'];
+        elementos.forEach(function(id) {
+          document.getElementById(id).setAttribute('visible', 'false');
+        });
+
+        document.getElementById('titulo-fin').setAttribute('value', mensaje);
+        document.getElementById('titulo-fin').setAttribute('color', colorTexto);
+        document.getElementById('subtitulo-fin').setAttribute('value', 'Puntuacion final: ' + window.puntos + ' puntos');
+
+        var menuFin = document.getElementById('menu-fin-3d');
+        menuFin.setAttribute('position', '0 0 -2.5');
+        menuFin.setAttribute('visible', 'true');
+      }
+
+      function dispersarObjeto(elemento, radio, alturaBase, rangoAltura) {
+        var angulo = Math.random() * Math.PI * 2;
+        var nuevoX = Math.cos(angulo) * radio;
+        var nuevoZ = Math.sin(angulo) * radio;
+        var nuevoY = (Math.random() * rangoAltura) + alturaBase;
+        elemento.setAttribute('position', `${nuevoX} ${nuevoY} ${nuevoZ}`);
+      }
+
+      // 3. COMPONENTE DEL COFRE (+1)
+      AFRAME.registerComponent('cofre-juego', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            window.puntos++;
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: ' + window.puntos + ' / 5');
+            if (window.puntos >= 5) { return activarFinJuego('¡VICTORIA VIRTUAL!', '#00FF00'); }
+            dispersarObjeto(el, 8.5, -3, 5.5);
+          });
+        }
+      });
+
+      // 4. COMPONENTE DEL ESQUELETO (-1)
+      AFRAME.registerComponent('esqueleto-enemigo', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            window.puntos = Math.max(0, window.puntos - 1);
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: ' + window.puntos + ' / 5');
+            document.getElementById('texto-pantalla').setAttribute('value', '¡EL ESQUELETO TE ATACÓ!\n-1 Punto');
+            document.getElementById('texto-pantalla').setAttribute('color', '#FFCC00');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2000);
+            dispersarObjeto(el, 7.5, -1.2, 0);
+            var pos = el.getAttribute('position');
+            var rotacionY = Math.atan2(pos.x, pos.z) * (180 / Math.PI) + 180;
+            el.setAttribute('rotation', `0 ${rotacionY} 0`);
+          });
+        }
+      });
+
+      // 5. COMPONENTE DEL ÁRBOL FANTASÍA (Barajador total)
+      AFRAME.registerComponent('arbol-destino', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            document.getElementById('texto-pantalla').setAttribute('value', '¡EL ÁRBOL REORDENÓ EL ESPACIO!');
+            document.getElementById('texto-pantalla').setAttribute('color', '#00E5FF');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2000);
+
+            var listado = ['item-cofre', 'item-world', 'item-esqueleto', 'item-pollito', 'item-dragon', 'item-cono', 'item-diamante', 'item-diamante-rojo'];
+            listado.forEach(function(id) {
+              dispersarObjeto(document.getElementById(id), 7.5, -2, 5);
+            });
+            dispersarObjeto(el, 6.0, -2.5, 0); 
+          });
+        }
+      });
+
+      // 6. COMPONENTE DEL POLLITO (+1)
+      AFRAME.registerComponent('pollito-bonus', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            window.puntos++;
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: ' + window.puntos + ' / 5');
+            if (window.puntos >= 5) { return activarFinJuego('¡VICTORIA CON POLLITO!', '#00FF00'); }
+            document.getElementById('texto-pantalla').setAttribute('value', '¡POLLITO DETECTADO!\n+1 Punto Bonus');
+            document.getElementById('texto-pantalla').setAttribute('color', '#69F0AE');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2000);
+            dispersarObjeto(el, 8.0, -2, 4);
+          });
+        }
+      });
+
+      // 7. COMPONENTE DEL DRAGÓN (-2)
+      AFRAME.registerComponent('dragon-ira', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            window.puntos = Math.max(0, window.puntos - 2);
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: ' + window.puntos + ' / 5');
+            document.getElementById('texto-pantalla').setAttribute('value', '¡EL DRAGÓN TE QUEMÓ!\n-2 Puntos');
+            document.getElementById('texto-pantalla').setAttribute('color', '#FF5252');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2500);
+            dispersarObjeto(el, 8.0, 1.5, 3.5);
+          });
+        }
+      });
+
+      // 8. COMPONENTE DEL CONO (Trampa de Invocación)
+      AFRAME.registerComponent('cono-trap', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            document.getElementById('texto-pantalla').setAttribute('value', '¡ZONA EN CONSTRUCCIÓN!\n¡Esqueleto Invocado!');
+            document.getElementById('texto-pantalla').setAttribute('color', '#FF9100');
+            var esqueleto = document.getElementById('item-esqueleto');
+            esqueleto.setAttribute('position', '0 -1.2 -2.5');
+            esqueleto.setAttribute('rotation', '0 0 0');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2000);
+            dispersarObjeto(el, 7.0, -2.5, 1);
+          });
+        }
+      });
+
+      // 9. COMPONENTE DEL DIAMANTE PURO (¡CORREGIDO!: Ahora sí se mueve perfectamente)
+      AFRAME.registerComponent('gema-pura', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+            
+            window.puntos += 2; 
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: ' + window.puntos + ' / 5');
+            
+            if (window.puntos >= 5) {
+              return activarFinJuego('¡VICTORIA POR RELIQUIA!', '#00FF00');
+            }
+
+            document.getElementById('texto-pantalla').setAttribute('value', '¡DIAMANTE PURO ENCONTRADO!\n+2 Puntos Sagrados');
+            document.getElementById('texto-pantalla').setAttribute('color', '#00E5FF');
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2000);
+            
+            // Teletransporta al contenedor Padre por el espacio sin romper la animación local del hijo
+            dispersarObjeto(el, 8.5, -1, 4);
+          });
+        }
+      });
+
+      // 10. COMPONENTE DEL DIAMANTE ROJO (-Reseteo)
+      AFRAME.registerComponent('gema-maldita', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+
+            window.puntos = 0; 
+            document.getElementById('texto-puntos').setAttribute('value', 'Puntos: 0 / 5');
+
+            document.getElementById('texto-pantalla').setAttribute('value', '¡MALDICIÓN DE SANGRE!\nMarcador Reseteado a 0');
+            document.getElementById('texto-pantalla').setAttribute('color', '#D32F2F');
+
+            document.getElementById('escenario-360').setAttribute('background', 'color: #3a0000');
+            setTimeout(function() {
+              if (!window.juegoTerminado) document.getElementById('escenario-360').setAttribute('background', 'color: #FFFFFF');
+            }, 1000);
+
+            setTimeout(function() { if (!window.juegoTerminado) document.getElementById('texto-pantalla').setAttribute('value', ''); }, 2500);
+            
+            dispersarObjeto(el, 8.0, -1, 4);
+          });
+        }
+      });
+
+      // 11. COMPONENTE DEL MUNDO TRAMPA (Explosión)
+      AFRAME.registerComponent('mundo-bomba', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('click', function () {
+            if (window.juegoTerminado || !window.juegoIniciado) return;
+
+            window.juegoTerminado = true;
+            document.getElementById('texto-pantalla').setAttribute('value', '¡BOOM!');
+            document.getElementById('texto-pantalla').setAttribute('color', '#FF0000');
+            document.getElementById('escenario-360').setAttribute('background', 'color: #550000');
+
+            var posicion = el.getAttribute('position');
+            var fuego = document.createElement('a-sphere');
+            fuego.setAttribute('position', posicion);
+            fuego.setAttribute('color', '#FF4500');
+            fuego.setAttribute('radius', '0.3');
+            fuego.setAttribute('material', 'transparent: true; opacity: 0.9; shader: flat');
+            el.sceneEl.appendChild(fuego);
+
+            var radioFuego = 0.3;
+            var opacidadFuego = 0.9;
+            
+            window.bucleExplosion = setInterval(function() {
+              radioFuego += 0.3;
+              opacidadFuego -= 0.05; 
+              fuego.setAttribute('radius', radioFuego);
+              fuego.setAttribute('material', 'opacity: ' + opacidadFuego);
+
+              var escalaActual = el.getAttribute('scale');
+              el.setAttribute('scale', { x: escalaActual.x * 1.2, y: escalaActual.y * 1.2, z: escalaActual.z * 1.2 });
+
+              if (opacidadFuego <= 0) {
+                clearInterval(window.bucleExplosion);
+                if (fuego.parentNode) fuego.parentNode.removeChild(fuego);
+                el.setAttribute('visible', 'false'); 
+                activarFinJuego('GAME OVER\nPlaneta Destruido', '#FF0000');
+              }
+            }, 30);
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+
+    <a-scene id="escenario-360" background="color: #FFFFFF">
+     
+      <a-assets>
+        <a-asset-item id="model-cofre" src="pixellabs-treasure-chest-3502.glb"></a-asset-item>
+        <a-asset-item id="model-mundo" src="timeworx-world-4045.glb"></a-asset-item>
+        <a-asset-item id="model-esqueleto" src="quaternius_cc0-skeleton-1343.glb"></a-asset-item>
+        <a-asset-item id="model-arbol" src="pixellabs-fantasy-tree-4501.glb"></a-asset-item>
+        <a-asset-item id="model-pollito" src="quaternius_cc0-chick-816.glb"></a-asset-item>
+        <a-asset-item id="model-dragon" src="quaternius_cc0-yellow-dragon-1524.glb"></a-asset-item>
+        <a-asset-item id="model-cono" src="quaternius_cc0-traffic-cone-1427.glb"></a-asset-item>
+        <a-asset-item id="model-diamante" src="blendertimer-diamond-4201.glb"></a-asset-item>
+        <a-asset-item id="model-diamante-rojo" src="blendertimer-diamond-4202.glb"></a-asset-item>
+      </a-assets>
+
+      <a-cylinder src="foto.jpg" radius="10" height="10" open-ended="true" material="side: back"></a-cylinder>
+      <a-circle position="0 -5.01 0" rotation="-90 0 0" radius="10.05" color="#ffffff" side="double"></a-circle>
+      <a-circle position="0 5.01 0" rotation="90 0 0" radius="10.05" color="#ffffff" side="double"></a-circle>
+
+
+      <a-entity id="menu-bienvenida-3d" position="0 0 -2.5" visible="true">
+        <a-plane color="#0c0c14" width="4.0" height="3.0" opacity="0.96"></a-plane>
+        <a-text value="LA MALDICION DEL GUARDIAN" align="center" position="0 1.3 0.02" width="4.5" color="#FFCC00" font="mozillavr"></a-text>
+        <a-text value="Edicion Definitiva: Contenedores Desacoplados" align="center" position="0 1.1 0.02" width="3.0" color="#00E5FF" font="mozillavr"></a-text>
+        <a-text value="MECANICAS PRINCIPALES (Fija la mirada):\n- COFRE / POLLITO: Buscalos para sumar +1 punto.\n- DIAMANTE AZUL: ¡Reliquia legendaria! Otorga +2 puntos.\n- DIAMANTE ROJO: ¡Codicia! Devuelve tu marcador a 0 puntos.\n- ESQUELETO (-1 pto) / DRAGON AMARILLO (-2 ptos).\n- CONO TRAFICO: Trampa oculta. Invoca al esqueleto encima tuyo.\n- ARBOL FANTASÍA: Mezcla las posiciones de todo el mapa.\n- PLANETA BOMBA: ¡Detona el mapa entero y pierdes!" 
+                align="left" position="-1.8 0.1 0.02" width="3.4" color="#FFFFFF" font="mozillavr"></a-text>
+        
+        <a-plane boton-inicio-vr color="#FFCC00" width="2.6" height="0.35" position="0 -1.25 0.03">
+          <a-text value="MANTEN LA MIRADA PARA EMPEZAR" align="center" color="#111111" width="3.8" position="0 0 0.01" font="mozillavr"></a-text>
+        </a-plane>
+      </a-entity>
+
+
+      <a-entity id="menu-fin-3d" position="0 -100 0" visible="false">
+        <a-plane color="#1c0606" width="3.2" height="1.8" opacity="0.95"></a-plane>
+        <a-text id="titulo-fin" value="GAME OVER" align="center" position="0 0.5 0.02" width="5" color="#FF0000" font="mozillavr"></a-text>
+        <a-text id="subtitulo-fin" value="Puntuacion: 0 puntos" align="center" position="0 0.1 0.02" width="3.5" color="#FFF" font="mozillavr"></a-text>
+        
+        <a-plane boton-reiniciar-vr color="#D32F2F" width="2.4" height="0.35" position="0 -0.5 0.03">
+          <a-text value="MANTEN LA MIRADA PARA REINICIAR" align="center" color="#FFFFFF" width="3.8" position="0 0 0.01" font="mozillavr"></a-text>
+        </a-plane>
+      </a-entity>
+
+
+      <a-entity id="item-cofre" cofre-juego gltf-model="#model-cofre" position="0 0 -7" scale="1 1 1" rotation="0 0 0" visible="false"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-entity>
+      
+      <a-entity id="item-world" mundo-bomba gltf-model="#model-mundo" position="6 1 4" scale="0.1 0.1 0.1" rotation="0 0 0" visible="false"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 14000; easing: linear"></a-entity>
+      
+      <a-entity id="item-esqueleto" esqueleto-enemigo gltf-model="#model-esqueleto" position="-6 -1.2 3" scale="1 1 1" rotation="0 120 0" visible="false"></a-entity>
+      
+      <a-entity id="item-arbol" arbol-destino gltf-model="#model-arbol" position="-4 -2.5 -5" scale="1 1 1" rotation="0 45 0" visible="false"></a-entity>
+      
+      <a-entity id="item-pollito" pollito-bonus gltf-model="#model-pollito" position="4 -1.5 -5" scale="0.3 0.3 0.3" rotation="0 -45 0" visible="false"></a-entity>
+
+      <a-entity id="item-dragon" dragon-ira gltf-model="#model-dragon" position="0 3 6" scale="0.5 0.5 0.5" rotation="20 180 0" visible="false"></a-entity>
+
+      <a-entity id="item-cono" cono-trap gltf-model="#model-cono" position="-2 -2.2 5" scale="1 1 1" rotation="0 0 0" visible="false"
+                animation="property: rotation; to: 0 360 0; loop: true; dur: 6000; easing: linear"></a-entity>
+
+      <a-entity id="item-diamante" gema-pura position="3 0.5 5" visible="false">
+         <a-entity gltf-model="#model-diamante" scale="0.35 0.35 0.35"
+                   animation__rot="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear"
+                   animation__pos="property: position; from: 0 0 0; to: 0 0.6 0; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine"></a-entity>
+      </a-entity>
+
+      <a-entity id="item-diamante-rojo" gema-maldita gltf-model="#model-diamante-rojo" position="-3 0.8 -4" scale="0.35 0.35 0.35" rotation="0 0 0" visible="false"
+                animation="property: rotation; to: 0 -360 0; loop: true; dur: 3000; easing: linear"></a-entity>
+
+
+      <a-entity position="0 0 0">
+        <a-camera wasd-controls-enabled="true" look-controls="true">
+          
+          <a-cursor color="#00E5FF" radius="0.02" 
+                    fuse="true" 
+                    fuse-timeout="1500"
+                    animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500; easing: easeInQuad"
+                    animation__mouseleave="property: scale; startEvents: mouseleave; to: 1 1 1; dur: 200; easing: easeOutQuad">
+          </a-cursor>
+
+          <a-text id="texto-puntos" value="Puntos: 0 / 5" position="-0.7 0.5 -1" scale="0.4 0.4 0.4" color="#FFFFFF" font="mozillavr"></a-text>
+          <a-text id="texto-pantalla" value="" align="center" position="0 0 -1.2" scale="0.5 0.5 0.5" color="#FF0000" font="mozillavr"></a-text>
+        </a-camera>
+      </a-entity>
+
+      <a-entity light="type: ambient; intensity: 1.2; color: #ffffff"></a-entity>
+
+    </a-scene>
+  </body>
+</html>
